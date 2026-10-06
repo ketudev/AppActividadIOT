@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.google.services)
 }
 
 android {
@@ -29,6 +30,9 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    buildFeatures {
+        viewBinding = true
+    }
 }
 
 dependencies {
@@ -37,6 +41,21 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.core.ktx)
     implementation(libs.material)
+
+    // Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth.ktx)
+
+    // Google Sign-In / Credential Manager
+    implementation(libs.play.services.auth)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services)
+    implementation(libs.googleid)
+
+    // Lifecycle
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.livedata.ktx)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)

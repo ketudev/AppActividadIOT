@@ -1,3 +1,29 @@
 <resources>
     <string name="app_name">AppActividadIOT</string>
+
+    <!-- Auth Common -->
+    <string name="hint_email">Correo electrónico</string>
+    <string name="hint_password">Contraseña</string>
+    <string name="hint_confirm_password">Confirmar contraseña</string>
+    <string name="hint_name">Nombre completo</string>
+    <string name="divider_or">o</string>
+    <string name="error_google_sign_in">No se pudo iniciar sesión con Google</string>
+
+    <!-- Login -->
+    <string name="login_subtitle">Inicia sesión para continuar</string>
+    <string name="btn_login">Iniciar Sesión</string>
+    <string name="btn_google_sign_in">Continuar con Google</string>
+    <string name="no_account_prompt">¿No tienes cuenta?</string>
+    <string name="btn_register">Regístrate</string>
+
+    <!-- Register -->
+    <string name="register_title">Crear cuenta</string>
+    <string name="register_subtitle">Completa tus datos para registrarte</string>
+    <string name="btn_create_account">Crear cuenta</string>
+    <string name="has_account_prompt">¿Ya tienes cuenta?</string>
+    <string name="btn_go_to_login">Inicia sesión</string>
+
+    <!-- Main -->
+    <string name="welcome_message">Bienvenido, %1$s</string>
+    <string name="btn_logout">Cerrar sesión</string>
 </resources>
