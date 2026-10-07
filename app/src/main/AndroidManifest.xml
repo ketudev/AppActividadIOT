@@ -32,6 +32,10 @@
             android:name=".MainActivity"
             android:windowSoftInputMode="adjustResize" />
 
+        <activity
+            android:name=".features.luces.LucesActivity"
+            android:windowSoftInputMode="adjustResize" />
+
     </application>
 
 </manifest>

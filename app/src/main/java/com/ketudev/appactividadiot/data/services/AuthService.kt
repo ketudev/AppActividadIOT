@@ -4,11 +4,13 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.userProfileChangeRequest
+import com.ketudev.appactividadiot.models.User
 import kotlinx.coroutines.tasks.await
 
 class AuthService {
 
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val lucesService = LucesService()
 
     val currentUser: FirebaseUser?
         get() = auth.currentUser
@@ -20,16 +22,30 @@ class AuthService {
 
     suspend fun createAccount(email: String, password: String, displayName: String): FirebaseUser? {
         val result = auth.createUserWithEmailAndPassword(email, password).await()
-        result.user?.updateProfile(
+        val user = result.user
+        user?.updateProfile(
             userProfileChangeRequest { this.displayName = displayName }
         )?.await()
-        return result.user
+        if (user != null) {
+            lucesService.saveUser(User(id = user.uid, nombre = displayName, email = email))
+        }
+        return user
     }
 
     suspend fun signInWithGoogle(idToken: String): FirebaseUser? {
         val credential = GoogleAuthProvider.getCredential(idToken, null)
         val result = auth.signInWithCredential(credential).await()
-        return result.user
+        val user = result.user
+        if (user != null) {
+            lucesService.saveUser(
+                User(
+                    id = user.uid,
+                    nombre = user.displayName ?: "",
+                    email = user.email ?: ""
+                )
+            )
+        }
+        return user
     }
 
     fun signOut() {

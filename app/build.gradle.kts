@@ -45,6 +45,7 @@ dependencies {
     // Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth.ktx)
+    implementation(libs.firebase.firestore.ktx)
 
     // Google Sign-In / Credential Manager
     implementation(libs.play.services.auth)

@@ -23,7 +23,35 @@
     <string name="has_account_prompt">¿Ya tienes cuenta?</string>
     <string name="btn_go_to_login">Inicia sesión</string>
 
-    <!-- Main -->
+    <!-- Main / Dashboard -->
     <string name="welcome_message">Bienvenido, %1$s</string>
+    <string name="service_title">Sistema de Apagado Remoto de Luz de Dormitorio</string>
+    <string name="service_description">Monitorea y gestiona el encendido, apagado y consumo energético de las luces en tus dormitorios de manera remota.</string>
+    <string name="preferences_title">Preferencias del Sistema</string>
+    <string name="pref_auto_off">Apagado automático nocturno</string>
+    <string name="pref_auto_off_desc">Apagar luces automáticamente a las 23:00 hrs</string>
+    <string name="pref_location_label">Dormitorio predeterminado:</string>
+    <string name="btn_manage_luces">Gestionar Dispositivos / Luces</string>
     <string name="btn_logout">Cerrar sesión</string>
+
+    <!-- Luces Feature -->
+    <string name="luces_title">Luces de Dormitorio</string>
+    <string name="luz_info_format">Consumo: %1$d W - Estado: %2$s</string>
+    <string name="add_luz_title">Agregar Luz de Dormitorio</string>
+    <string name="edit_luz_title">Editar Luz de Dormitorio</string>
+    <string name="hint_habitacion">Habitación / Ubicación</string>
+    <string name="hint_consumo_watts">Consumo en Watts</string>
+    <string name="hint_estado">Estado</string>
+    <string name="estado_encendida">Encendida</string>
+    <string name="estado_apagada">Apagada</string>
+    <string name="btn_save">Guardar</string>
+    <string name="btn_cancel">Cancelar</string>
+    <string name="btn_delete">Eliminar</string>
+    <string name="delete_confirm_title">Confirmar Eliminación</string>
+    <string name="delete_confirm_message">¿Deseas eliminar el dispositivo \"%1$s\"?</string>
+    <string name="empty_luces_message">No hay dispositivos de luz registrados.\nPresiona + para agregar uno.</string>
+    <string name="error_required_fields">Todos los campos son obligatorios</string>
+    <string name="error_invalid_watts">Ingresa un consumo válido en Watts</string>
+    <string name="delete_icon_description">Eliminar dispositivo</string>
+    <string name="light_icon_description">Icono de luz</string>
 </resources>
