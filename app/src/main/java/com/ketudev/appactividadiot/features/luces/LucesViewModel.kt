@@ -46,6 +46,12 @@ class LucesViewModel : ViewModel() {
         )
     }
 
+    fun toggleLuzEstado(luz: LuzDormitorio) {
+        val newEstado = if (luz.estado.equals("Encendida", ignoreCase = true)) "Apagada" else "Encendida"
+        val newWatts = if (newEstado == "Apagada") 0 else if (luz.consumoWatts > 0) luz.consumoWatts else 60
+        updateLuz(luz.id, luz.habitacion, newWatts.toString(), newEstado)
+    }
+
     fun addLuz(habitacion: String, wattsStr: String, estado: String) {
         if (habitacion.isBlank() || wattsStr.isBlank() || estado.isBlank()) {
             _error.value = "Todos los campos son obligatorios"

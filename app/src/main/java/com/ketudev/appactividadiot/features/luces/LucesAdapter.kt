@@ -1,5 +1,6 @@
 package com.ketudev.appactividadiot.features.luces
 
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
@@ -11,7 +12,8 @@ import com.ketudev.appactividadiot.models.LuzDormitorio
 
 class LucesAdapter(
     private val onItemClick: (LuzDormitorio) -> Unit,
-    private val onDeleteClick: (LuzDormitorio) -> Unit
+    private val onDeleteClick: (LuzDormitorio) -> Unit,
+    private val onToggleClick: (LuzDormitorio) -> Unit
 ) : ListAdapter<LuzDormitorio, LucesAdapter.LuzViewHolder>(DiffCallback) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): LuzViewHolder {
@@ -34,6 +36,12 @@ class LucesAdapter(
                 luz.consumoWatts,
                 luz.estado
             )
+
+            val isEncendida = luz.estado.equals("Encendida", ignoreCase = true)
+            val iconColor = if (isEncendida) Color.parseColor("#FFB300") else Color.parseColor("#757575")
+            binding.ivIcon.setColorFilter(iconColor)
+
+            binding.ivIcon.setOnClickListener { onToggleClick(luz) }
             binding.root.setOnClickListener { onItemClick(luz) }
             binding.btnDelete.setOnClickListener { onDeleteClick(luz) }
         }

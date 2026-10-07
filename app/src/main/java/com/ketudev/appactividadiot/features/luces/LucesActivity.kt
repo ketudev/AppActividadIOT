@@ -55,7 +55,8 @@ class LucesActivity : AppCompatActivity() {
     private fun setupRecyclerView() {
         adapter = LucesAdapter(
             onItemClick = { luz -> showEditDialog(luz) },
-            onDeleteClick = { luz -> showDeleteConfirmation(luz) }
+            onDeleteClick = { luz -> showDeleteConfirmation(luz) },
+            onToggleClick = { luz -> viewModel.toggleLuzEstado(luz) }
         )
         binding.rvLuces.layoutManager = LinearLayoutManager(this)
         binding.rvLuces.adapter = adapter
