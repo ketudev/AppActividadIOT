@@ -12,10 +12,13 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.google.android.material.timepicker.MaterialTimePicker
+import com.google.android.material.timepicker.TimeFormat
 import com.google.firebase.auth.FirebaseAuth
 import com.ketudev.appactividadiot.databinding.ActivityMainBinding
 import com.ketudev.appactividadiot.features.auth.LoginActivity
 import com.ketudev.appactividadiot.features.luces.LucesActivity
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
@@ -26,6 +29,8 @@ class MainActivity : AppCompatActivity() {
         private const val PREFS_NAME = "iot_app_prefs"
         private const val KEY_AUTO_OFF = "pref_auto_off"
         private const val KEY_LOCATION_POS = "pref_location_pos"
+        private const val KEY_ALARM_TIME = "pref_alarm_time"
+        private const val DEFAULT_ALARM_TIME = "23:00"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -72,6 +77,13 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         }
 
+        // Alarm Time setup
+        val savedTime = preferences.getString(KEY_ALARM_TIME, DEFAULT_ALARM_TIME) ?: DEFAULT_ALARM_TIME
+        binding.btnAlarmTime.text = "$savedTime hrs"
+        binding.btnAlarmTime.setOnClickListener {
+            showTimePicker()
+        }
+
         // Spinner setup
         val locations = arrayOf(
             "Dormitorio Principal",
@@ -104,6 +116,29 @@ class MainActivity : AppCompatActivity() {
                 // No-op
             }
         }
+    }
+
+    private fun showTimePicker() {
+        val currentTime = preferences.getString(KEY_ALARM_TIME, DEFAULT_ALARM_TIME) ?: DEFAULT_ALARM_TIME
+        val timeParts = currentTime.split(":")
+        val initialHour = timeParts.getOrNull(0)?.toIntOrNull() ?: 23
+        val initialMinute = timeParts.getOrNull(1)?.toIntOrNull() ?: 0
+
+        val picker = MaterialTimePicker.Builder()
+            .setTimeFormat(TimeFormat.CLOCK_24H)
+            .setHour(initialHour)
+            .setMinute(initialMinute)
+            .setTitleText("Seleccionar hora de apagado")
+            .build()
+
+        picker.addOnPositiveButtonClickListener {
+            val formattedTime = String.format(Locale.getDefault(), "%02d:%02d", picker.hour, picker.minute)
+            preferences.edit().putString(KEY_ALARM_TIME, formattedTime).apply()
+            binding.btnAlarmTime.text = "$formattedTime hrs"
+            Toast.makeText(this, "Hora de apagado programada: $formattedTime hrs", Toast.LENGTH_SHORT).show()
+        }
+
+        picker.show(supportFragmentManager, "time_picker")
     }
 
     private fun setupLogout() {

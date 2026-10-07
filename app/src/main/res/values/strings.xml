@@ -29,8 +29,9 @@
     <string name="service_description">Monitorea y gestiona el encendido, apagado y consumo energético de las luces en tus dormitorios de manera remota.</string>
     <string name="preferences_title">Preferencias del Sistema</string>
     <string name="pref_auto_off">Apagado automático nocturno</string>
-    <string name="pref_auto_off_desc">Apagar luces automáticamente a las 23:00 hrs</string>
+    <string name="pref_auto_off_desc">Apagar luces automáticamente a la hora programada</string>
     <string name="pref_location_label">Dormitorio predeterminado:</string>
+    <string name="pref_alarm_time_label">Hora de apagado programada / Alarma:</string>
     <string name="btn_manage_luces">Gestionar Dispositivos / Luces</string>
     <string name="btn_logout">Cerrar sesión</string>
 

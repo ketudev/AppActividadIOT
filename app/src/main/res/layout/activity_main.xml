@@ -131,6 +131,33 @@
                     android:background="?attr/colorOutlineVariant" />
 
                 <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/tvAlarmTimeLabel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/pref_alarm_time_label"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAlarmTime"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="8dp"
+                    android:gravity="start|center_vertical"
+                    android:text="23:00 hrs"
+                    android:textAppearance="?attr/textAppearanceBodyLarge"
+                    app:icon="@drawable/ic_lightbulb"
+                    app:iconGravity="textStart"
+                    app:cornerRadius="10dp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="16dp"
+                    android:background="?attr/colorOutlineVariant" />
+
+                <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/tvLocationLabel"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
