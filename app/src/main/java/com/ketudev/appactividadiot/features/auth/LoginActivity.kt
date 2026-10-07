@@ -120,11 +120,8 @@ class LoginActivity : AppCompatActivity() {
                 )
                 handleGoogleSignIn(response)
             } catch (e: Exception) {
-                Snackbar.make(
-                    binding.root,
-                    getString(R.string.error_google_sign_in),
-                    Snackbar.LENGTH_LONG
-                ).show()
+                val msg = e.localizedMessage ?: getString(R.string.error_google_sign_in)
+                Snackbar.make(binding.root, msg, Snackbar.LENGTH_LONG).show()
             }
         }
     }
