@@ -27,7 +27,12 @@ class AuthService {
             userProfileChangeRequest { this.displayName = displayName }
         )?.await()
         if (user != null) {
-            lucesService.saveUser(User(id = user.uid, nombre = displayName, email = email))
+            try {
+                lucesService.saveUser(User(id = user.uid, nombre = displayName, email = email))
+            } catch (e: Exception) {
+                // Do not block authentication success if Firestore save encounters issue
+                e.printStackTrace()
+            }
         }
         return user
     }
@@ -37,13 +42,18 @@ class AuthService {
         val result = auth.signInWithCredential(credential).await()
         val user = result.user
         if (user != null) {
-            lucesService.saveUser(
-                User(
-                    id = user.uid,
-                    nombre = user.displayName ?: "",
-                    email = user.email ?: ""
+            try {
+                lucesService.saveUser(
+                    User(
+                        id = user.uid,
+                        nombre = user.displayName ?: "",
+                        email = user.email ?: ""
+                    )
                 )
-            )
+            } catch (e: Exception) {
+                // Do not block authentication success if Firestore save encounters issue
+                e.printStackTrace()
+            }
         }
         return user
     }
