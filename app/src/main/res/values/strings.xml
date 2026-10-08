@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">AppActividadIOT</string>
+    <string name="app_name">Spark</string>
 
     <!-- Auth Common -->
     <string name="hint_email">Correo electrónico</string>

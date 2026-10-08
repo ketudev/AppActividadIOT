@@ -120,7 +120,7 @@ class LoginActivity : AppCompatActivity() {
                 )
                 handleGoogleSignIn(response)
             } catch (e: Exception) {
-                val msg = e.localizedMessage ?: getString(R.string.error_google_sign_in)
+                val msg = com.ketudev.appactividadiot.utils.ErrorSanitizer.sanitize(e)
                 Snackbar.make(binding.root, msg, Snackbar.LENGTH_LONG).show()
             }
         }

@@ -1,7 +1,7 @@
 # Especificación: Módulo de Autenticación (Auth)
 
 ## Objetivo
-Proveer un flujo de autenticación completo que permita a los usuarios iniciar sesión y registrarse mediante **email/contraseña** y **Google Sign-In**, con validación de entradas y UI basada en Material Design 3.
+Proveer un flujo de autenticación completo para la aplicación **Spark** que permita a los usuarios iniciar sesión y registrarse mediante **email/contraseña** y **Google Sign-In**, con identidad visual unificada (`logoGemini.png`), mensajes de error sanitizados en español y validación estricta de entradas.
 
 ## Arquitectura y Diseño
 
@@ -15,13 +15,14 @@ com.ketudev.appactividadiot/
 │       └── AuthService.kt              # Wrapper de Firebase Auth
 ├── features/
 │   └── auth/
-│       ├── LoginActivity.kt            # Vista de Login
+│       ├── LoginActivity.kt            # Vista de Login con logo y título Spark
 │       ├── RegisterActivity.kt         # Vista de Registro
 │       └── AuthViewModel.kt            # ViewModel compartido
 ├── models/
 │   └── AuthResult.kt                   # Sealed class para resultados
 ├── utils/
-│   └── ValidationUtils.kt             # Validación de email/password
+│   ├── ValidationUtils.kt             # Validación de email, password, nombre
+│   └── ErrorSanitizer.kt              # Sanitización de errores Firebase a mensajes amigables
 └── MainActivity.kt                     # Pantalla principal (post-login)
 ```
 
@@ -30,105 +31,88 @@ com.ketudev.appactividadiot/
 | Clase | Responsabilidad |
 |---|---|
 | `AuthService` | Encapsula las llamadas a Firebase Auth (login email, registro, Google Sign-In, logout) |
-| `AuthViewModel` | Expone LiveData con estados de UI, coordina validaciones y llamadas al AuthService |
-| `AuthResult` | Sealed class: `Loading`, `Success`, `Error(message)` |
-| `ValidationUtils` | Funciones de validación para email y contraseña |
-| `LoginActivity` | UI de login con campos email/password, toggle password, botón Google Sign-In |
+| `AuthViewModel` | Expone LiveData con estados de UI, coordina validaciones y llamadas al AuthService sanitizando excepciones |
+| `AuthResult` | Sealed class: `Idle`, `Loading`, `Success`, `Error(message)` |
+| `ValidationUtils` | Funciones de validación para email, contraseña y nombre |
+| `ErrorSanitizer` | Convierte excepciones técnicas de Firebase Auth / Red en mensajes comprensibles en español |
+| `LoginActivity` | UI de login con logo `logo_gemini.png` (110dp x 110dp), marca "Spark", campos email/password, Google Sign-In |
 | `RegisterActivity` | UI de registro con campos nombre, email, password, confirmar password |
 
 ## UI / UX
 
 ### LoginActivity (`activity_login.xml`)
-- **Logo/Título** de la app centrado en la parte superior
-- **TextInputLayout + TextInputEditText** para email (validación formato email)
-- **TextInputLayout + TextInputEditText** para contraseña (con `endIconMode="password_toggle"`)
-- **MaterialButton** "Iniciar Sesión" (primary, filled)
-- **Divider** con texto "O continuar con"
-- **MaterialButton** con icono de Google "Continuar con Google" (outlined/tonal)
-- **TextButton** "¿No tienes cuenta? Regístrate" → navega a RegisterActivity
-- **ProgressIndicator** circular en estado Loading
-- **Snackbar** para errores
+- **Logo Visual**: Imagen `logo_gemini.png` (110dp x 110dp) centrada en la parte superior.
+- **Título**: "Spark" (MaterialTextView en HeadlineLarge bold).
+- **Subtítulo**: "Inicia sesión para continuar".
+- **TextInputLayout + TextInputEditText** para email (validación de formato y longitud).
+- **TextInputLayout + TextInputEditText** para contraseña (con toggle de visibilidad).
+- **MaterialButton** "Iniciar Sesión" (filled primary).
+- **Divider** "o".
+- **MaterialButton** "Continuar con Google" con icono de Google.
+- **TextButton** "¿No tienes cuenta? Regístrate" → navega a RegisterActivity.
+- **LinearProgressIndicator** en estado Loading.
+- **Snackbar** para errores sanitizados globales.
 
 ### RegisterActivity (`activity_register.xml`)
-- **Toolbar** con botón de retroceso
-- **Título** "Crear cuenta"
-- **TextInputLayout + TextInputEditText** para nombre completo
-- **TextInputLayout + TextInputEditText** para email
-- **TextInputLayout + TextInputEditText** para contraseña (con toggle y requisitos visibles)
-- **TextInputLayout + TextInputEditText** para confirmar contraseña (con toggle)
-- **MaterialButton** "Crear cuenta" (primary, filled)
-- **ProgressIndicator** circular en estado Loading
-- **Snackbar** para errores
+- **Toolbar** con botón de retroceso.
+- **Título** "Crear cuenta".
+- **TextInputLayout + TextInputEditText** para nombre completo.
+- **TextInputLayout + TextInputEditText** para email.
+- **TextInputLayout + TextInputEditText** para contraseña (mínimo 6 caracteres).
+- **TextInputLayout + TextInputEditText** para confirmar contraseña.
+- **MaterialButton** "Crear cuenta".
+- **ProgressIndicator** en estado Loading.
+- **Snackbar** para errores sanitizados.
 
 ### Estados de la Vista
-1. **Idle**: Formulario habilitado, sin indicadores
-2. **Loading**: Formulario deshabilitado, ProgressIndicator visible
-3. **Success**: Navega a MainActivity
-4. **Error**: Muestra Snackbar con mensaje de error, formulario habilitado
+1. **Idle**: Formulario habilitado, sin cargando.
+2. **Loading**: Formulario deshabilitado, ProgressIndicator visible.
+3. **Success**: Navega a MainActivity.
+4. **Error**: Muestra Snackbar con mensaje sanitizado en español, restaura formulario.
 
 ## Flujos de Datos / Casos de Uso
 
 ### Flujo 1: Login con Email/Contraseña
-1. Usuario ingresa email y contraseña
-2. Al pulsar "Iniciar Sesión", ViewModel valida los campos
-3. Si la validación falla → muestra errores inline en los TextInputLayouts
-4. Si pasa → AuthService.signInWithEmail(email, password) vía Firebase Auth
-5. Resultado Success → navega a MainActivity (con FLAG_CLEAR_TASK)
-6. Resultado Error → muestra Snackbar con el mensaje
+1. Usuario ingresa email y contraseña.
+2. ViewModel valida formato de email y contraseña en tiempo real/al enviar.
+3. Si hay errores → muestra errores inline en `TextInputLayout`.
+4. Si es válido → `AuthService.signInWithEmail(email, password)`.
+5. Si ocurre excepción de Firebase → `ErrorSanitizer.sanitize(e)` convierte a mensaje amigable ("Correo o contraseña incorrectos", etc.).
+6. Success → navega a `MainActivity`.
 
 ### Flujo 2: Google Sign-In
-1. Usuario pulsa "Continuar con Google"
-2. Se lanza el flujo de CredentialManager (nueva API)
-3. Se obtiene el GoogleIdToken
-4. AuthService.signInWithGoogle(idToken) → Firebase Auth con credencial
-5. Success → navega a MainActivity
-6. Error → Snackbar
+1. Usuario pulsa "Continuar con Google".
+2. Se lanza CredentialManager API.
+3. Si se cancela o falla red → `ErrorSanitizer` traduce el fallo a mensaje amigable.
+4. Success → navega a `MainActivity`.
 
-### Flujo 3: Registro con Email/Contraseña
-1. Usuario completa nombre, email, password, confirmar password
-2. Validaciones: nombre no vacío, email válido, password ≥ 6 chars, passwords coinciden
-3. AuthService.createAccount(email, password) → Firebase Auth
-4. Post-registro: se actualiza displayName con el nombre
-5. Success → navega a MainActivity
-6. Error → Snackbar
+## Validaciones y Bloqueos Lógicos
 
-### Flujo 4: Sesión Persistente
-1. Al iniciar LoginActivity, verificar si ya hay un usuario autenticado
-2. Si `FirebaseAuth.currentUser != null` → navega directo a MainActivity
-
-## Validaciones
-
-| Campo | Regla | Mensaje de error |
+| Campo | Reglas / Bloqueos | Mensaje de error |
 |---|---|---|
-| Email | No vacío + formato email válido (Patterns.EMAIL_ADDRESS) | "Ingresa un correo electrónico válido" |
-| Contraseña | No vacía + mínimo 6 caracteres | "La contraseña debe tener al menos 6 caracteres" |
+| Email | No vacío + formato email válido + máx 100 caracteres | "Ingresa un correo electrónico válido" |
+| Contraseña | No vacía + mínimo 6 caracteres + máx 128 caracteres | "La contraseña debe tener al menos 6 caracteres" |
 | Confirmar contraseña | Coincide con contraseña | "Las contraseñas no coinciden" |
-| Nombre | No vacío | "Ingresa tu nombre" |
+| Nombre | No vacío + mínimo 2 caracteres + máx 50 caracteres | "Ingresa tu nombre completo" |
 
-## Dependencias Necesarias
+## Mensajes de Error Sanitizados
 
-- `com.google.firebase:firebase-bom` (Firebase BOM)
-- `com.google.firebase:firebase-auth-ktx` (Firebase Auth)
-- `com.google.android.gms:play-services-auth` (Google Sign-In / CredentialManager)
-- `androidx.credentials:credentials` (Credential Manager)
-- `androidx.credentials:credentials-play-services-auth` (Credential Manager GMS)
-- `com.google.android.libraries.identity.googleid:googleid` (Google ID)
-- `androidx.lifecycle:lifecycle-viewmodel-ktx` (ViewModel)
-- `androidx.lifecycle:lifecycle-livedata-ktx` (LiveData)
-- Plugin: `com.google.gms.google-services`
+| Excepción / Error Firebase | Mensaje Sanitizado Presentado al Usuario |
+|---|---|
+| Credenciales inválidas / contraseña incorrecta / usuario no encontrado | "Correo o contraseña incorrectos." |
+| Formato de email malformado | "El formato del correo electrónico no es válido." |
+| Correo ya registrado | "El correo electrónico ya se encuentra registrado." |
+| Contraseña débil | "La contraseña es demasiado débil. Usa al menos 6 caracteres." |
+| Sin conexión a internet | "Error de conexión. Verifica tu conexión a internet." |
+| Demasiados intentos fallidos | "Demasiados intentos fallidos. Intenta más tarde." |
+| Cancelación de Google Sign-In | "Inicio de sesión con Google cancelado." |
+| Error desconocido | "Ocurrió un error al procesar la solicitud." |
 
 ## Casos de Prueba Sugeridos
 
-1. **Login exitoso** con email/contraseña válidos
-2. **Login fallido** con credenciales incorrectas → muestra error
-3. **Validación email vacío** → muestra error inline
-4. **Validación email inválido** → muestra error inline
-5. **Validación contraseña corta** (< 6 chars) → muestra error inline
-6. **Toggle visibilidad** de contraseña funciona correctamente
-7. **Google Sign-In exitoso** → navega a MainActivity
-8. **Google Sign-In cancelado** → no hace nada / muestra mensaje
-9. **Registro exitoso** → navega a MainActivity con displayName actualizado
-10. **Registro con passwords no coincidentes** → muestra error
-11. **Sesión persistente**: al reabrir la app, va directo a MainActivity
-12. **Estado Loading** deshabilita formulario y muestra indicador
-13. **Navegación Login ↔ Registro** funciona correctamente
+1. **Branding**: Verificar que el logo y el texto "Spark" aparecen correctamente centrados en LoginActivity.
+2. **Icono de la app**: Verificar que el icono de la aplicación en Android tiene fondo blanco con el logo Gemini.
+3. **Login fallido con credenciales falsas**: Confirmar que se muestra "Correo o contraseña incorrectos." en lugar del texto crudo de Firebase.
+4. **Validación email sin formato**: Muestra error inline "Ingresa un correo electrónico válido".
+5. **Validación password corta**: Muestra error inline "La contraseña debe tener al menos 6 caracteres".
+6. **Google Sign-In cancelado**: Muestra mensaje sanitizado sin romper la aplicación.

@@ -86,17 +86,33 @@ class LucesActivity : AppCompatActivity() {
         dialogBinding.actvEstado.setAdapter(dropdownAdapter)
         dialogBinding.actvEstado.setText(estados[0], false)
 
-        MaterialAlertDialogBuilder(this)
+        val dialog = MaterialAlertDialogBuilder(this)
             .setTitle(R.string.add_luz_title)
             .setView(dialogBinding.root)
-            .setPositiveButton(R.string.btn_save) { _, _ ->
-                val habitacion = dialogBinding.etHabitacion.text?.toString()?.trim().orEmpty()
-                val watts = dialogBinding.etConsumoWatts.text?.toString()?.trim().orEmpty()
-                val estado = dialogBinding.actvEstado.text?.toString()?.trim().orEmpty()
-                viewModel.addLuz(habitacion, watts, estado)
-            }
+            .setPositiveButton(R.string.btn_save, null)
             .setNegativeButton(R.string.btn_cancel, null)
-            .show()
+            .create()
+
+        dialog.show()
+
+        dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val habitacion = dialogBinding.etHabitacion.text?.toString().orEmpty()
+            val watts = dialogBinding.etConsumoWatts.text?.toString().orEmpty()
+            val estado = dialogBinding.actvEstado.text?.toString().orEmpty()
+
+            val habitacionErr = com.ketudev.appactividadiot.utils.ValidationUtils.validateHabitacion(habitacion)
+            val wattsErr = com.ketudev.appactividadiot.utils.ValidationUtils.validateWatts(watts)
+            val estadoErr = com.ketudev.appactividadiot.utils.ValidationUtils.validateEstado(estado)
+
+            dialogBinding.tilHabitacion.error = habitacionErr
+            dialogBinding.tilConsumoWatts.error = wattsErr
+            dialogBinding.tilEstado.error = estadoErr
+
+            if (habitacionErr == null && wattsErr == null && estadoErr == null) {
+                viewModel.addLuz(habitacion.trim(), watts.trim(), estado.trim())
+                dialog.dismiss()
+            }
+        }
     }
 
     private fun showEditDialog(luz: LuzDormitorio) {
@@ -114,17 +130,33 @@ class LucesActivity : AppCompatActivity() {
         }
         dialogBinding.actvEstado.setText(currentEstado, false)
 
-        MaterialAlertDialogBuilder(this)
+        val dialog = MaterialAlertDialogBuilder(this)
             .setTitle(R.string.edit_luz_title)
             .setView(dialogBinding.root)
-            .setPositiveButton(R.string.btn_save) { _, _ ->
-                val habitacion = dialogBinding.etHabitacion.text?.toString()?.trim().orEmpty()
-                val watts = dialogBinding.etConsumoWatts.text?.toString()?.trim().orEmpty()
-                val estado = dialogBinding.actvEstado.text?.toString()?.trim().orEmpty()
-                viewModel.updateLuz(luz.id, habitacion, watts, estado)
-            }
+            .setPositiveButton(R.string.btn_save, null)
             .setNegativeButton(R.string.btn_cancel, null)
-            .show()
+            .create()
+
+        dialog.show()
+
+        dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val habitacion = dialogBinding.etHabitacion.text?.toString().orEmpty()
+            val watts = dialogBinding.etConsumoWatts.text?.toString().orEmpty()
+            val estado = dialogBinding.actvEstado.text?.toString().orEmpty()
+
+            val habitacionErr = com.ketudev.appactividadiot.utils.ValidationUtils.validateHabitacion(habitacion)
+            val wattsErr = com.ketudev.appactividadiot.utils.ValidationUtils.validateWatts(watts)
+            val estadoErr = com.ketudev.appactividadiot.utils.ValidationUtils.validateEstado(estado)
+
+            dialogBinding.tilHabitacion.error = habitacionErr
+            dialogBinding.tilConsumoWatts.error = wattsErr
+            dialogBinding.tilEstado.error = estadoErr
+
+            if (habitacionErr == null && wattsErr == null && estadoErr == null) {
+                viewModel.updateLuz(luz.id, habitacion.trim(), watts.trim(), estado.trim())
+                dialog.dismiss()
+            }
+        }
     }
 
     private fun showDeleteConfirmation(luz: LuzDormitorio) {

@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.ListenerRegistration
 import com.ketudev.appactividadiot.data.services.LucesService
 import com.ketudev.appactividadiot.models.LuzDormitorio
+import com.ketudev.appactividadiot.utils.ErrorSanitizer
+import com.ketudev.appactividadiot.utils.ValidationUtils
 import kotlinx.coroutines.launch
 
 class LucesViewModel : ViewModel() {
@@ -41,51 +43,65 @@ class LucesViewModel : ViewModel() {
             },
             onError = { e ->
                 _loading.value = false
-                _error.value = e.localizedMessage ?: "Error al obtener datos"
+                _error.value = ErrorSanitizer.sanitize(e)
             }
         )
     }
 
     fun toggleLuzEstado(luz: LuzDormitorio) {
         val newEstado = if (luz.estado.equals("Encendida", ignoreCase = true)) "Apagada" else "Encendida"
-        val newWatts = if (newEstado == "Apagada") 0 else if (luz.consumoWatts > 0) luz.consumoWatts else 60
-        updateLuz(luz.id, luz.habitacion, newWatts.toString(), newEstado)
+        val newWatts = if (newEstado == "Apagada") 0 else if (luz.consumoWatts in 1..150) luz.consumoWatts else 60
+        updateLuzDirect(luz.id, luz.habitacion, newWatts, newEstado)
+    }
+
+    private fun updateLuzDirect(id: String, habitacion: String, watts: Int, estado: String) {
+        viewModelScope.launch {
+            try {
+                lucesService.updateLuz(LuzDormitorio(id = id, habitacion = habitacion, consumoWatts = watts, estado = estado))
+            } catch (e: Exception) {
+                _error.value = ErrorSanitizer.sanitize(e)
+            }
+        }
     }
 
     fun addLuz(habitacion: String, wattsStr: String, estado: String) {
-        if (habitacion.isBlank() || wattsStr.isBlank() || estado.isBlank()) {
-            _error.value = "Todos los campos son obligatorios"
+        val habitacionErr = ValidationUtils.validateHabitacion(habitacion)
+        val wattsErr = ValidationUtils.validateWatts(wattsStr)
+        val estadoErr = ValidationUtils.validateEstado(estado)
+
+        val firstError = habitacionErr ?: wattsErr ?: estadoErr
+        if (firstError != null) {
+            _error.value = firstError
             return
         }
-        val watts = wattsStr.toIntOrNull()
-        if (watts == null || watts < 0) {
-            _error.value = "Ingresa un consumo válido en Watts"
-            return
-        }
+
+        val watts = wattsStr.trim().toInt()
         viewModelScope.launch {
             try {
-                lucesService.addLuz(LuzDormitorio(habitacion = habitacion, consumoWatts = watts, estado = estado))
+                lucesService.addLuz(LuzDormitorio(habitacion = habitacion.trim(), consumoWatts = watts, estado = estado.trim()))
             } catch (e: Exception) {
-                _error.value = e.localizedMessage ?: "Error al guardar"
+                _error.value = ErrorSanitizer.sanitize(e)
             }
         }
     }
 
     fun updateLuz(id: String, habitacion: String, wattsStr: String, estado: String) {
-        if (habitacion.isBlank() || wattsStr.isBlank() || estado.isBlank()) {
-            _error.value = "Todos los campos son obligatorios"
+        val habitacionErr = ValidationUtils.validateHabitacion(habitacion)
+        val wattsErr = ValidationUtils.validateWatts(wattsStr)
+        val estadoErr = ValidationUtils.validateEstado(estado)
+
+        val firstError = habitacionErr ?: wattsErr ?: estadoErr
+        if (firstError != null) {
+            _error.value = firstError
             return
         }
-        val watts = wattsStr.toIntOrNull()
-        if (watts == null || watts < 0) {
-            _error.value = "Ingresa un consumo válido en Watts"
-            return
-        }
+
+        val watts = wattsStr.trim().toInt()
         viewModelScope.launch {
             try {
-                lucesService.updateLuz(LuzDormitorio(id = id, habitacion = habitacion, consumoWatts = watts, estado = estado))
+                lucesService.updateLuz(LuzDormitorio(id = id, habitacion = habitacion.trim(), consumoWatts = watts, estado = estado.trim()))
             } catch (e: Exception) {
-                _error.value = e.localizedMessage ?: "Error al actualizar"
+                _error.value = ErrorSanitizer.sanitize(e)
             }
         }
     }
@@ -95,7 +111,7 @@ class LucesViewModel : ViewModel() {
             try {
                 lucesService.deleteLuz(id)
             } catch (e: Exception) {
-                _error.value = e.localizedMessage ?: "Error al eliminar"
+                _error.value = ErrorSanitizer.sanitize(e)
             }
         }
     }

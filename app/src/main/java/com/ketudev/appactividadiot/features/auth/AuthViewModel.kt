@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ketudev.appactividadiot.data.services.AuthService
 import com.ketudev.appactividadiot.models.AuthResult
+import com.ketudev.appactividadiot.utils.ErrorSanitizer
 import com.ketudev.appactividadiot.utils.ValidationUtils
 import kotlinx.coroutines.launch
 
@@ -47,7 +48,7 @@ class AuthViewModel : ViewModel() {
                 _authResult.value = AuthResult.Success(user)
             } catch (e: Exception) {
                 _authResult.value = AuthResult.Error(
-                    e.localizedMessage ?: "Error al iniciar sesión"
+                    ErrorSanitizer.sanitize(e)
                 )
             }
         }
@@ -74,7 +75,7 @@ class AuthViewModel : ViewModel() {
                 _authResult.value = AuthResult.Success(user)
             } catch (e: Exception) {
                 _authResult.value = AuthResult.Error(
-                    e.localizedMessage ?: "Error al crear la cuenta"
+                    ErrorSanitizer.sanitize(e)
                 )
             }
         }
@@ -88,7 +89,7 @@ class AuthViewModel : ViewModel() {
                 _authResult.value = AuthResult.Success(user)
             } catch (e: Exception) {
                 _authResult.value = AuthResult.Error(
-                    e.localizedMessage ?: "Error al iniciar sesión con Google"
+                    ErrorSanitizer.sanitize(e)
                 )
             }
         }
