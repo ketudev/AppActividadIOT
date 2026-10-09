@@ -74,4 +74,44 @@ object ValidationUtils {
             else -> null
         }
     }
+
+    /**
+     * Resultado del cruce de validaciones del formulario de luz.
+     * [esValido] es true cuando ningún campo reporta error.
+     */
+    data class LuzFormErrors(
+        val habitacion: String?,
+        val watts: String?,
+        val estado: String?
+    ) {
+        val esValido: Boolean get() = habitacion == null && watts == null && estado == null
+
+        /** Primer error encontrado, para mostrar en un Snackbar si hiciese falta. */
+        val primerError: String? get() = habitacion ?: watts ?: estado
+    }
+
+    /**
+     * Determina si el formulario fue dejado completamente en blanco.
+     * En ese caso la app permite crear/guardar un registro vacío (placeholder),
+     * que luego puede completarse editándolo.
+     */
+    fun esFormularioVacio(habitacion: String, watts: String, estado: String): Boolean =
+        habitacion.isBlank() && watts.isBlank() && estado.isBlank()
+
+    /**
+     * Aplica las validaciones lógicas de cada campo.
+     * Regla: si el formulario está totalmente vacío NO se reportan errores
+     * (registro vacío permitido). Si al menos un campo tiene contenido,
+     * se validan los campos obligatorios con normalidad.
+     */
+    fun validateLuzForm(habitacion: String, watts: String, estado: String): LuzFormErrors {
+        if (esFormularioVacio(habitacion, watts, estado)) {
+            return LuzFormErrors(null, null, null)
+        }
+        return LuzFormErrors(
+            habitacion = validateHabitacion(habitacion),
+            watts = validateWatts(watts),
+            estado = validateEstado(estado)
+        )
+    }
 }

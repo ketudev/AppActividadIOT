@@ -50,6 +50,12 @@
     <string name="btn_delete">Eliminar</string>
     <string name="delete_confirm_title">Confirmar Eliminación</string>
     <string name="delete_confirm_message">¿Deseas eliminar el dispositivo \"%1$s\"?</string>
+    <string name="delete_confirm_message_empty">¿Deseas eliminar el dispositivo sin nombre?</string>
+    <string name="helper_empty_record">Puedes dejar todo en blanco para crear un registro vacío.</string>
+    <string name="luz_empty_habitacion">Registro sin completar</string>
+    <string name="luz_info_empty_estado_format">Sin datos - Estado: %1$s</string>
+    <string name="luz_info_sin_estado_format">Consumo: %1$d W - Sin estado</string>
+    <string name="luz_info_sin_datos">Sin datos - Sin estado</string>
     <string name="empty_luces_message">No hay dispositivos de luz registrados.\nPresiona + para agregar uno.</string>
     <string name="error_required_fields">Todos los campos son obligatorios</string>
     <string name="error_invalid_watts">Ingresa un consumo válido en Watts</string>

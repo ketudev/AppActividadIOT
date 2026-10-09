@@ -30,12 +30,21 @@ class LucesAdapter(
 
         fun bind(luz: LuzDormitorio) {
             val context = binding.root.context
-            binding.tvHabitacion.text = luz.habitacion
-            binding.tvInfo.text = context.getString(
-                R.string.luz_info_format,
-                luz.consumoWatts,
-                luz.estado
-            )
+            val esVacio = luz.habitacion.isBlank() && luz.consumoWatts <= 0
+
+            binding.tvHabitacion.text = if (luz.habitacion.isBlank()) {
+                context.getString(R.string.luz_empty_habitacion)
+            } else {
+                luz.habitacion
+            }
+
+            binding.tvInfo.text = when {
+                esVacio && luz.estado.isNotBlank() ->
+                    context.getString(R.string.luz_info_empty_estado_format, luz.estado)
+                esVacio -> context.getString(R.string.luz_info_sin_datos)
+                luz.estado.isBlank() -> context.getString(R.string.luz_info_sin_estado_format, luz.consumoWatts)
+                else -> context.getString(R.string.luz_info_format, luz.consumoWatts, luz.estado)
+            }
 
             val isEncendida = luz.estado.equals("Encendida", ignoreCase = true)
             val iconColor = if (isEncendida) Color.parseColor("#FFB300") else Color.parseColor("#757575")

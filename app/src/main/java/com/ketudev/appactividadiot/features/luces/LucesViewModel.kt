@@ -50,7 +50,14 @@ class LucesViewModel : ViewModel() {
 
     fun toggleLuzEstado(luz: LuzDormitorio) {
         val newEstado = if (luz.estado.equals("Encendida", ignoreCase = true)) "Apagada" else "Encendida"
-        val newWatts = if (newEstado == "Apagada") 0 else if (luz.consumoWatts in 1..150) luz.consumoWatts else 60
+        val esRegistroVacio = luz.habitacion.isBlank() && luz.consumoWatts <= 0
+        // En un registro vacio solo se alterna el estado, sin inventar un consumo.
+        val newWatts = when {
+            newEstado == "Apagada" -> 0
+            esRegistroVacio -> 0
+            luz.consumoWatts in 1..150 -> luz.consumoWatts
+            else -> 60
+        }
         updateLuzDirect(luz.id, luz.habitacion, newWatts, newEstado)
     }
 
@@ -65,20 +72,23 @@ class LucesViewModel : ViewModel() {
     }
 
     fun addLuz(habitacion: String, wattsStr: String, estado: String) {
-        val habitacionErr = ValidationUtils.validateHabitacion(habitacion)
-        val wattsErr = ValidationUtils.validateWatts(wattsStr)
-        val estadoErr = ValidationUtils.validateEstado(estado)
-
-        val firstError = habitacionErr ?: wattsErr ?: estadoErr
-        if (firstError != null) {
-            _error.value = firstError
+        val errors = ValidationUtils.validateLuzForm(habitacion, wattsStr, estado)
+        if (!errors.esValido) {
+            _error.value = errors.primerError
             return
         }
 
-        val watts = wattsStr.trim().toInt()
+        val esVacio = ValidationUtils.esFormularioVacio(habitacion, wattsStr, estado)
+        val watts = if (esVacio) 0 else wattsStr.trim().toInt()
         viewModelScope.launch {
             try {
-                lucesService.addLuz(LuzDormitorio(habitacion = habitacion.trim(), consumoWatts = watts, estado = estado.trim()))
+                lucesService.addLuz(
+                    LuzDormitorio(
+                        habitacion = habitacion.trim(),
+                        consumoWatts = watts,
+                        estado = estado.trim()
+                    )
+                )
             } catch (e: Exception) {
                 _error.value = ErrorSanitizer.sanitize(e)
             }
@@ -86,17 +96,14 @@ class LucesViewModel : ViewModel() {
     }
 
     fun updateLuz(id: String, habitacion: String, wattsStr: String, estado: String) {
-        val habitacionErr = ValidationUtils.validateHabitacion(habitacion)
-        val wattsErr = ValidationUtils.validateWatts(wattsStr)
-        val estadoErr = ValidationUtils.validateEstado(estado)
-
-        val firstError = habitacionErr ?: wattsErr ?: estadoErr
-        if (firstError != null) {
-            _error.value = firstError
+        val errors = ValidationUtils.validateLuzForm(habitacion, wattsStr, estado)
+        if (!errors.esValido) {
+            _error.value = errors.primerError
             return
         }
 
-        val watts = wattsStr.trim().toInt()
+        val esVacio = ValidationUtils.esFormularioVacio(habitacion, wattsStr, estado)
+        val watts = if (esVacio) 0 else wattsStr.trim().toInt()
         viewModelScope.launch {
             try {
                 lucesService.updateLuz(LuzDormitorio(id = id, habitacion = habitacion.trim(), consumoWatts = watts, estado = estado.trim()))

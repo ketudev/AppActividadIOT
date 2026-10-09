@@ -6,6 +6,7 @@ import android.widget.ArrayAdapter
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AlertDialog
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -15,6 +16,7 @@ import com.ketudev.appactividadiot.R
 import com.ketudev.appactividadiot.databinding.ActivityLucesBinding
 import com.ketudev.appactividadiot.databinding.DialogLuzBinding
 import com.ketudev.appactividadiot.models.LuzDormitorio
+import com.ketudev.appactividadiot.utils.ValidationUtils
 
 class LucesActivity : AppCompatActivity() {
 
@@ -81,10 +83,9 @@ class LucesActivity : AppCompatActivity() {
 
     private fun showAddDialog() {
         val dialogBinding = DialogLuzBinding.inflate(layoutInflater)
-        val estados = arrayOf(getString(R.string.estado_encendida), getString(R.string.estado_apagada))
-        val dropdownAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, estados)
-        dialogBinding.actvEstado.setAdapter(dropdownAdapter)
-        dialogBinding.actvEstado.setText(estados[0], false)
+        setupEstadoDropdown(dialogBinding)
+        // Sin estado preseleccionado: así el formulario puede quedar completamente vacío.
+        dialogBinding.actvEstado.setText("", false)
 
         val dialog = MaterialAlertDialogBuilder(this)
             .setTitle(R.string.add_luz_title)
@@ -95,40 +96,42 @@ class LucesActivity : AppCompatActivity() {
 
         dialog.show()
 
-        dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
             val habitacion = dialogBinding.etHabitacion.text?.toString().orEmpty()
             val watts = dialogBinding.etConsumoWatts.text?.toString().orEmpty()
             val estado = dialogBinding.actvEstado.text?.toString().orEmpty()
 
-            val habitacionErr = com.ketudev.appactividadiot.utils.ValidationUtils.validateHabitacion(habitacion)
-            val wattsErr = com.ketudev.appactividadiot.utils.ValidationUtils.validateWatts(watts)
-            val estadoErr = com.ketudev.appactividadiot.utils.ValidationUtils.validateEstado(estado)
+            // Formulario en blanco => registro vacío permitido (sin errores).
+            // Formulario con contenido => validaciones lógicas campo a campo.
+            val errors = ValidationUtils.validateLuzForm(habitacion, watts, estado)
 
-            dialogBinding.tilHabitacion.error = habitacionErr
-            dialogBinding.tilConsumoWatts.error = wattsErr
-            dialogBinding.tilEstado.error = estadoErr
-
-            if (habitacionErr == null && wattsErr == null && estadoErr == null) {
-                viewModel.addLuz(habitacion.trim(), watts.trim(), estado.trim())
+            if (errors.esValido) {
+                viewModel.addLuz(habitacion, watts, estado)
                 dialog.dismiss()
+            } else {
+                dialogBinding.tilHabitacion.error = errors.habitacion
+                dialogBinding.tilConsumoWatts.error = errors.watts
+                dialogBinding.tilEstado.error = errors.estado
             }
         }
     }
 
     private fun showEditDialog(luz: LuzDormitorio) {
         val dialogBinding = DialogLuzBinding.inflate(layoutInflater)
-        val estados = arrayOf(getString(R.string.estado_encendida), getString(R.string.estado_apagada))
-        val dropdownAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, estados)
-        dialogBinding.actvEstado.setAdapter(dropdownAdapter)
+        setupEstadoDropdown(dialogBinding)
 
+        val esRegistroVacio = luz.habitacion.isBlank() && luz.consumoWatts <= 0
         dialogBinding.etHabitacion.setText(luz.habitacion)
-        dialogBinding.etConsumoWatts.setText(luz.consumoWatts.toString())
-        val currentEstado = if (luz.estado.equals(getString(R.string.estado_apagada), ignoreCase = true)) {
-            getString(R.string.estado_apagada)
-        } else {
-            getString(R.string.estado_encendida)
-        }
-        dialogBinding.actvEstado.setText(currentEstado, false)
+        dialogBinding.etConsumoWatts.setText(if (luz.consumoWatts > 0) luz.consumoWatts.toString() else "")
+        dialogBinding.actvEstado.setText(
+            when {
+                esRegistroVacio -> ""
+                luz.estado.equals(getString(R.string.estado_apagada), ignoreCase = true) ->
+                    getString(R.string.estado_apagada)
+                else -> getString(R.string.estado_encendida)
+            },
+            false
+        )
 
         val dialog = MaterialAlertDialogBuilder(this)
             .setTitle(R.string.edit_luz_title)
@@ -139,30 +142,41 @@ class LucesActivity : AppCompatActivity() {
 
         dialog.show()
 
-        dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
             val habitacion = dialogBinding.etHabitacion.text?.toString().orEmpty()
             val watts = dialogBinding.etConsumoWatts.text?.toString().orEmpty()
             val estado = dialogBinding.actvEstado.text?.toString().orEmpty()
 
-            val habitacionErr = com.ketudev.appactividadiot.utils.ValidationUtils.validateHabitacion(habitacion)
-            val wattsErr = com.ketudev.appactividadiot.utils.ValidationUtils.validateWatts(watts)
-            val estadoErr = com.ketudev.appactividadiot.utils.ValidationUtils.validateEstado(estado)
+            // Editar sigue las mismas reglas: vacío permitido, contenido validado.
+            val errors = ValidationUtils.validateLuzForm(habitacion, watts, estado)
 
-            dialogBinding.tilHabitacion.error = habitacionErr
-            dialogBinding.tilConsumoWatts.error = wattsErr
-            dialogBinding.tilEstado.error = estadoErr
-
-            if (habitacionErr == null && wattsErr == null && estadoErr == null) {
-                viewModel.updateLuz(luz.id, habitacion.trim(), watts.trim(), estado.trim())
+            if (errors.esValido) {
+                viewModel.updateLuz(luz.id, habitacion, watts, estado)
                 dialog.dismiss()
+            } else {
+                dialogBinding.tilHabitacion.error = errors.habitacion
+                dialogBinding.tilConsumoWatts.error = errors.watts
+                dialogBinding.tilEstado.error = errors.estado
             }
         }
     }
 
+    private fun setupEstadoDropdown(dialogBinding: DialogLuzBinding) {
+        val estados = arrayOf(getString(R.string.estado_encendida), getString(R.string.estado_apagada))
+        dialogBinding.actvEstado.setAdapter(
+            ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, estados)
+        )
+    }
+
     private fun showDeleteConfirmation(luz: LuzDormitorio) {
+        val mensaje = if (luz.habitacion.isBlank()) {
+            getString(R.string.delete_confirm_message_empty)
+        } else {
+            getString(R.string.delete_confirm_message, luz.habitacion)
+        }
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.delete_confirm_title)
-            .setMessage(getString(R.string.delete_confirm_message, luz.habitacion))
+            .setMessage(mensaje)
             .setPositiveButton(R.string.btn_delete) { _, _ ->
                 viewModel.deleteLuz(luz.id)
             }
