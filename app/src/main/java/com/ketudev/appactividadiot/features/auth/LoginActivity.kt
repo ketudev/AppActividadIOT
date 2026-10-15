@@ -2,6 +2,7 @@ package com.ketudev.appactividadiot.features.auth
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -12,6 +13,9 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetCredentialResponse
+import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.GetCredentialProviderConfigurationException
+import androidx.credentials.exceptions.NoCredentialException
 import androidx.lifecycle.lifecycleScope
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -20,6 +24,8 @@ import com.ketudev.appactividadiot.MainActivity
 import com.ketudev.appactividadiot.R
 import com.ketudev.appactividadiot.databinding.ActivityLoginBinding
 import com.ketudev.appactividadiot.models.AuthResult
+import com.ketudev.appactividadiot.utils.AuthSource
+import com.ketudev.appactividadiot.utils.ErrorSanitizer
 import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
@@ -101,11 +107,21 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun launchGoogleSignIn() {
+        requestGoogleCredential(onlyAuthorizedAccounts = false)
+    }
+
+    /**
+     * Solicita el credential de Google. Primero se ofrece el selector de cuentas ya
+     * autorizadas en el dispositivo (selector nativo) y, si no hay ninguna, se reintenta
+     * con el selector completo para cuentas nuevas.
+     */
+    private fun requestGoogleCredential(onlyAuthorizedAccounts: Boolean) {
         val credentialManager = CredentialManager.create(this)
 
         val googleIdOption = GetGoogleIdOption.Builder()
-            .setFilterByAuthorizedAccounts(false)
+            .setFilterByAuthorizedAccounts(onlyAuthorizedAccounts)
             .setServerClientId(getString(R.string.default_web_client_id))
+            .setAutoSelectEnabled(false)
             .build()
 
         val request = GetCredentialRequest.Builder()
@@ -119,9 +135,23 @@ class LoginActivity : AppCompatActivity() {
                     context = this@LoginActivity
                 )
                 handleGoogleSignIn(response)
+            } catch (e: GetCredentialCancellationException) {
+                showSnackbar("Operación cancelada por el usuario.")
+            } catch (e: NoCredentialException) {
+                if (onlyAuthorizedAccounts) {
+                    // No hay cuentas autorizadas: se ofrece el selector completo.
+                    requestGoogleCredential(onlyAuthorizedAccounts = false)
+                } else {
+                    showSnackbar(
+                        "No se encontró una cuenta de Google en este dispositivo."
+                    )
+                }
+            } catch (e: GetCredentialProviderConfigurationException) {
+                Log.e(TAG, "Proveedor de credenciales mal configurado", e)
+                showSnackbar(ErrorSanitizer.sanitize(e, AuthSource.GOOGLE))
             } catch (e: Exception) {
-                val msg = com.ketudev.appactividadiot.utils.ErrorSanitizer.sanitize(e)
-                Snackbar.make(binding.root, msg, Snackbar.LENGTH_LONG).show()
+                Log.e(TAG, "Fallo en Google Sign-In", e)
+                showSnackbar(ErrorSanitizer.sanitize(e, AuthSource.GOOGLE))
             }
         }
     }
@@ -132,8 +162,18 @@ class LoginActivity : AppCompatActivity() {
                 if (credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                     val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
                     viewModel.signInWithGoogle(googleIdTokenCredential.idToken)
+                } else {
+                    showSnackbar(getString(R.string.error_google_sign_in))
                 }
             }
+
+            else -> showSnackbar(getString(R.string.error_google_sign_in))
+        }
+    }
+
+    private fun showSnackbar(message: String) {
+        if (::binding.isInitialized) {
+            Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG).show()
         }
     }
 
@@ -143,5 +183,9 @@ class LoginActivity : AppCompatActivity() {
         }
         startActivity(intent)
         finish()
+    }
+
+    companion object {
+        private const val TAG = "LoginActivity"
     }
 }

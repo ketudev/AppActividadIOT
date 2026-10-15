@@ -34,7 +34,7 @@ com.ketudev.appactividadiot/
 | `AuthViewModel` | Expone LiveData con estados de UI, coordina validaciones y llamadas al AuthService sanitizando excepciones |
 | `AuthResult` | Sealed class: `Idle`, `Loading`, `Success`, `Error(message)` |
 | `ValidationUtils` | Funciones de validación para email, contraseña y nombre |
-| `ErrorSanitizer` | Convierte excepciones técnicas de Firebase Auth / Red en mensajes comprensibles en español |
+| `ErrorSanitizer` | Convierte excepciones técnicas de Firebase Auth / Red en mensajes comprensibles en español, según el origen de la acción (`AuthSource.EMAIL` / `AuthSource.GOOGLE`) |
 | `LoginActivity` | UI de login con logo `logo_gemini.png` (110dp x 110dp), marca "Spark", campos email/password, Google Sign-In |
 | `RegisterActivity` | UI de registro con campos nombre, email, password, confirmar password |
 
@@ -77,14 +77,22 @@ com.ketudev.appactividadiot/
 2. ViewModel valida formato de email y contraseña en tiempo real/al enviar.
 3. Si hay errores → muestra errores inline en `TextInputLayout`.
 4. Si es válido → `AuthService.signInWithEmail(email, password)`.
-5. Si ocurre excepción de Firebase → `ErrorSanitizer.sanitize(e)` convierte a mensaje amigable ("Correo o contraseña incorrectos", etc.).
+5. Si ocurre excepción de Firebase → `ErrorSanitizer.sanitize(e, AuthSource.EMAIL)` convierte a mensaje amigable ("Correo o contraseña incorrectos", etc.).
 6. Success → navega a `MainActivity`.
 
 ### Flujo 2: Google Sign-In
 1. Usuario pulsa "Continuar con Google".
-2. Se lanza CredentialManager API.
-3. Si se cancela o falla red → `ErrorSanitizer` traduce el fallo a mensaje amigable.
-4. Success → navega a `MainActivity`.
+2. `LoginActivity.requestGoogleCredential(onlyAuthorizedAccounts = false)` lanza CredentialManager API con `GetGoogleIdOption` usando `default_web_client_id`.
+3. Manejo de excepciones por tipo:
+   - `GetCredentialCancellationException` → Snackbar "Operación cancelada por el usuario."
+   - `NoCredentialException` con filtro autorizado → reintenta con el selector completo.
+   - `NoCredentialException` sin filtro → "No se encontró una cuenta de Google en este dispositivo."
+   - Cualquier otra excepción → `ErrorSanitizer.sanitize(e, AuthSource.GOOGLE)`.
+4. La respuesta debe ser un `CustomCredential` de tipo `GoogleIdTokenCredential`; si no lo es, se muestra `error_google_sign_in`.
+5. `AuthViewModel.signInWithGoogle(idToken)` intercambia el token por una sesión de Firebase.
+6. Success → navega a `MainActivity`.
+
+> **Requisito de configuración (causa raíz histórica del fallo "Correo o contraseña incorrectos")**: la huella SHA-1 del keystore de depuración debe estar registrada en Firebase Console (Authentication > Settings > Authorized domains) **y** associated al cliente Android del proyecto de Google Cloud. Si falta, Firebase responde `ERROR_INVALID_IDP_RESPONSE` y la app debe reportarlo como problema de configuración, nunca como credenciales inválidas.
 
 ## Validaciones y Bloqueos Lógicos
 
@@ -97,16 +105,33 @@ com.ketudev.appactividadiot/
 
 ## Mensajes de Error Sanitizados
 
+`ErrorSanitizer.sanitize(throwable, source)` recibe el **origen** de la acción
+(`AuthSource.EMAIL` o `AuthSource.GOOGLE`) para no mostrar "Correo o contraseña
+incorrectos" cuando el fallo real es de configuración de Google Sign-In.
+
+### Origen: EMAIL (formulario de correo)
+
 | Excepción / Error Firebase | Mensaje Sanitizado Presentado al Usuario |
 |---|---|
 | Credenciales inválidas / contraseña incorrecta / usuario no encontrado | "Correo o contraseña incorrectos." |
 | Formato de email malformado | "El formato del correo electrónico no es válido." |
 | Correo ya registrado | "El correo electrónico ya se encuentra registrado." |
 | Contraseña débil | "La contraseña es demasiado débil. Usa al menos 6 caracteres." |
+| Proveedor de correo deshabilitado (`operation-not-allowed`) | "El proveedor de acceso con correo no está habilitado en Firebase." |
 | Sin conexión a internet | "Error de conexión. Verifica tu conexión a internet." |
-| Demasiados intentos fallidos | "Demasiados intentos fallidos. Intenta más tarde." |
-| Cancelación de Google Sign-In | "Inicio de sesión con Google cancelado." |
+| Demasiados intentos fallidos | "Demasiados intentos fallidos. Por favor, reintenta más tarde." |
 | Error desconocido | "Ocurrió un error al procesar la solicitud." |
+
+### Origen: GOOGLE
+
+| Excepción / Error Firebase | Mensaje Sanitizado Presentado al Usuario |
+|---|---|
+| `invalid-idp-response` / `ERROR_INVALID_CREDENTIAL` / SHA-1 no registrado | "No pudimos validar tu cuenta con Google. Agrega la huella SHA-1 del keystore de depuración en Firebase..." |
+| `account-exists-with-different-credential` | "Ya existe una cuenta con ese correo usando otro método de acceso." |
+| `credential-already-in-use` | "Esta cuenta de Google ya está vinculada a otra cuenta de la app." |
+| `credential-mismatch` | "La cuenta de Google no coincide con la cuenta que iniciaste sesión." |
+| `web-context-canceled` / cancelación | "Operación cancelada por el usuario." |
+| Sin credenciales en el dispositivo | "No se encontró una cuenta de Google disponible en este dispositivo." |
 
 ## Casos de Prueba Sugeridos
 

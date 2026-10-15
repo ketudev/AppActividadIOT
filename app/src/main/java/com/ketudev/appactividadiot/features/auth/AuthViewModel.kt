@@ -4,8 +4,10 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.util.Log
 import com.ketudev.appactividadiot.data.services.AuthService
 import com.ketudev.appactividadiot.models.AuthResult
+import com.ketudev.appactividadiot.utils.AuthSource
 import com.ketudev.appactividadiot.utils.ErrorSanitizer
 import com.ketudev.appactividadiot.utils.ValidationUtils
 import kotlinx.coroutines.launch
@@ -47,8 +49,9 @@ class AuthViewModel : ViewModel() {
                 val user = authService.signInWithEmail(email, password)
                 _authResult.value = AuthResult.Success(user)
             } catch (e: Exception) {
+                Log.e(TAG, "Fallo en signInWithEmail", e)
                 _authResult.value = AuthResult.Error(
-                    ErrorSanitizer.sanitize(e)
+                    ErrorSanitizer.sanitize(e, AuthSource.EMAIL)
                 )
             }
         }
@@ -74,8 +77,9 @@ class AuthViewModel : ViewModel() {
                 val user = authService.createAccount(email, password, name)
                 _authResult.value = AuthResult.Success(user)
             } catch (e: Exception) {
+                Log.e(TAG, "Fallo en createAccount", e)
                 _authResult.value = AuthResult.Error(
-                    ErrorSanitizer.sanitize(e)
+                    ErrorSanitizer.sanitize(e, AuthSource.EMAIL)
                 )
             }
         }
@@ -88,8 +92,9 @@ class AuthViewModel : ViewModel() {
                 val user = authService.signInWithGoogle(idToken)
                 _authResult.value = AuthResult.Success(user)
             } catch (e: Exception) {
+                Log.e(TAG, "Fallo en signInWithGoogle", e)
                 _authResult.value = AuthResult.Error(
-                    ErrorSanitizer.sanitize(e)
+                    ErrorSanitizer.sanitize(e, AuthSource.GOOGLE)
                 )
             }
         }
@@ -106,5 +111,9 @@ class AuthViewModel : ViewModel() {
         _passwordError.value = null
         _confirmPasswordError.value = null
         _nameError.value = null
+    }
+
+    companion object {
+        private const val TAG = "AuthViewModel"
     }
 }
